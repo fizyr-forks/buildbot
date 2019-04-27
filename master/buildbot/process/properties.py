@@ -14,6 +14,7 @@
 # Copyright Buildbot Team Members
 
 import collections
+import inspect
 import json
 import re
 import weakref
@@ -827,7 +828,7 @@ class _Renderer(util.ComparableMixin):
     compare_attrs = ('fn',)
 
     def __init__(self, fn):
-        self.fn = fn
+        self.fn = defer.ensureDeferred(fn)
         self.args = []
         self.kwargs = {}
 
@@ -856,6 +857,10 @@ class _Renderer(util.ComparableMixin):
 
 
 def renderer(fn):
+    if hasattr(inspect, 'iscoroutinefunction') and inspect.iscoroutinefunction(fn):
+        def wrapped(*args, **kwargs):
+            return defer.ensureDeferred(*args, **kwargs)
+        fn = wrapped
     return _Renderer(fn)
 
 
